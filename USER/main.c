@@ -57,7 +57,7 @@ int main(void)
                         hwTimeCount = 0;
                         tMotorState = RUN;            
                         hall_exti_callback();
-//                        HAL_Delay(12);
+                        delay(12);
                         NVIC_EnableIRQ(HALL_EXTI_IRQn);
                         hall_exti_callback();
                     }          
@@ -221,19 +221,20 @@ void systick_callback(void)
         }
     }
 }
-
+uint8_t chMotorState;
 void hall_exti_callback(void)
 {
   __IO uint8_t chStep = 0;
-  uint16_t hwHallState = (HALL_PORT ->IDR) & 0x01c0; // 读取霍尔传感器信息
+  uint16_t hwHallState = (HALL_PORT ->IDR) & 0xe000; // 读取霍尔传感器信息
   
   if (tMotorState==STOP) {
       return;
   }
-  chStep = hwHallState >> 6;
+  chStep = hwHallState >> 13;
   if (tMotorDirection == CW) {  // 方向判断
       chStep =  7 - chStep;
   }
+  chMotorState = chStep;
   bldc_phase_chaneg(chStep);    //驱动换相
   hwTimeCount = 0;
 }

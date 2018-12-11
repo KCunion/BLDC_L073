@@ -8,6 +8,7 @@ void hall_init(void)
 
     NVIC_InitTypeDef NVIC_InitStructure;
     RCC_AHBPeriphClockCmd(HALL_RCC_CLOCKGPIO,ENABLE);
+    RCC_APB2PeriphClockCmd(HALL_RCC_CLOCKAFIO,ENABLE);//外部中断，需要使能AFIO时钟
     
     GPIO_InitStructure.GPIO_Pin = HALL_U_PIN | HALL_V_PIN | HALL_W_PIN;  
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;  

@@ -14,7 +14,7 @@ typedef enum
 #define KEY1_DOWN_LEVEL         1  /* 根据原理图设计，KEY1按下时引脚为高电平，所以这里设置为1 */
 #define KEY2_PIN                GPIO_Pin_9
 #define KEY2_PORT               GPIOB
-#define KEY2_DOWN_LEVEL         1  /* 根据原理图设计，KEY1按下时引脚为低电平，所以这里设置为0 */
+#define KEY2_DOWN_LEVEL         1  /* 根据原理图设计，KEY1按下时引脚为高电平，所以这里设置为0 */
 
 extern void key_init(void);
 extern key_state_t key1_scan(void);

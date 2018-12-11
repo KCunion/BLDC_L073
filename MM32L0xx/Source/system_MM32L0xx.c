@@ -89,12 +89,12 @@ If you are using different crystal you have to adapt those functions accordingly
 //#define SYSCLK_FREQ_HSE    HSE_VALUE
 //#define SYSCLK_FREQ_24MHz  24000000  
 //#define SYSCLK_FREQ_36MHz  36000000 
-#define SYSCLK_FREQ_48MHz  48000000 
+//#define SYSCLK_FREQ_48MHz  48000000 
 
 //#define SYSCLK_HSI_24MHz  24000000
 //#define SYSCLK_HSI_36MHz  36000000
 //#define SYSCLK_HSI_48MHz  48000000
-
+#define SYSCLK_HSI_72MHz  72000000
 
 /*!< Uncomment the following line if you need to relocate your vector Table in
 Internal SRAM. */ 
@@ -124,7 +124,8 @@ uint32_t SystemCoreClock         = SYSCLK_HSI_24MHz;        /*!< System Clock Fr
 uint32_t SystemCoreClock         = SYSCLK_HSI_36MHz;        /*!< System Clock Frequency (Core Clock) */
 #elif defined SYSCLK_HSI_48MHz
 uint32_t SystemCoreClock         = SYSCLK_HSI_48MHz;        /*!< System Clock Frequency (Core Clock) */
-
+#elif defined SYSCLK_HSI_72MHz
+uint32_t SystemCoreClock         = SYSCLK_HSI_72MHz;        /*!< System Clock Frequency (Core Clock) */
 #else /*!< HSI Selected as System Clock source */
 uint32_t SystemCoreClock         = HSI_VALUE;        /*!< System Clock Frequency (Core Clock) */
 #endif
@@ -151,7 +152,8 @@ static void SetSysClockTo24_HSI(void);
 static void SetSysClockTo36_HSI(void);
 #elif defined SYSCLK_HSI_48MHz
 static void SetSysClockTo48_HSI(void);
-
+#elif defined SYSCLK_HSI_72MHz
+static void SetSysClockTo72_HSI(void);
 #endif
 
 #ifdef DATA_IN_ExtSRAM
@@ -222,6 +224,8 @@ static void SetSysClock(void)
     SetSysClockTo36_HSI();
 #elif defined SYSCLK_HSI_48MHz
     SetSysClockTo48_HSI();
+#elif defined SYSCLK_HSI_72MHz
+    SetSysClockTo72_HSI();
 #endif
     
     /* If none of the define above is enabled, the HSI is used as System clock
@@ -646,6 +650,34 @@ void SetSysClockTo48_HSI()
     } 
 }	
 
+#elif defined SYSCLK_HSI_72MHz
+void SetSysClockTo72_HSI()
+{
+    unsigned char temp=0;   
+    
+    RCC->CR|=RCC_CR_HSION;  
+    while(!(RCC->CR&RCC_CR_HSIRDY));
+    RCC->CFGR=RCC_CFGR_PPRE1_2; //APB1=DIV2;APB2=DIV1;AHB=DIV1;
+    
+    RCC->CFGR&=~RCC_CFGR_PLLSRC;	  //PLLSRC ON 
+    
+    RCC->CR &=~(RCC_CR_PLLON);		//清PLL//	RCC->CR &=~(7<<20);		//清PLL
+    
+    RCC->CR &=~((uint32_t)0x3f<<26);	
+    RCC->CR|=(6 - 1) << 26;   //设置PLL值 2~16
+    
+    FLASH->ACR = FLASH_ACR_LATENCY_2|FLASH_ACR_PRFTBE;	  //FLASH 1个延时周期
+    
+    RCC->CR|=RCC_CR_PLLON;  //PLLON
+    while(!(RCC->CR&RCC_CR_PLLRDY));//等待PLL锁定
+    RCC->CFGR&=~RCC_CFGR_SW;
+    RCC->CFGR|=RCC_CFGR_SW_PLL;//PLL作为系统时钟	 
+    while(temp!=0x02)     //等待PLL作为系统时钟设置成功
+    {    
+        temp=RCC->CFGR>>2;
+        temp&=0x03;
+    } 
+}	
 #endif
 
 /**
