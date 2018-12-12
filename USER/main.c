@@ -15,10 +15,10 @@ typedef enum
 
 /* 私有宏定义 ----------------------------------------------------------------*/
 /* 私有变量 ------------------------------------------------------------------*/
-__IO uint16_t     hwSpeedDuty = 15;       // 速度占空比：0~100  为100是占空比为100%
-__IO motor_state_t  tMotorState = STOP;    // 电机状态
-__IO motor_dir_t    tMotorDirection = CW;  // 电机方向
-__IO uint16_t     hwTimeCount = 0;     	 // 卡住超时溢出计数
+__IO uint16_t     g_hwSpeedDuty = 15;       // 速度占空比：0~100  为100是占空比为100%
+__IO motor_state_t  g_tMotorState = STOP;    // 电机状态
+__IO motor_dir_t    g_tMotorDirection = CW;  // 电机方向
+__IO uint16_t     g_hwTimeCount = 0;     	 // 卡住超时溢出计数
 
 /* 扩展变量 ------------------------------------------------------------------*/
 /* 私有函数原形 --------------------------------------------------------------*/
@@ -33,7 +33,7 @@ extern void systick_callback(void);
   * 返 回 值: 无
   * 说    明: 无
   */
-static uint8_t key_count = 1;
+static uint8_t s_KeyCount = 1;
 int main(void)
 { 
     systick_init();
@@ -45,17 +45,17 @@ int main(void)
     /* 无限循环 */
     while (1) {    
         if (key1_scan() == KEY_DOWN) {    // 功能选择
-            key_count ++;
-            if (key_count > 5) {
-                key_count = 1;
+            s_KeyCount ++;
+            if (s_KeyCount > 5) {
+                s_KeyCount = 1;
             }
         }
         if(key2_scan() == KEY_DOWN) {   // 功能执行
-            switch (key_count) {
+            switch (s_KeyCount) {
                 case 1:         // 电机启动
-                    if (STOP == tMotorState) {
-                        hwTimeCount = 0;
-                        tMotorState = RUN;            
+                    if (STOP == g_tMotorState) {
+                        g_hwTimeCount = 0;
+                        g_tMotorState = RUN;            
                         hall_exti_callback();
                         delay(12);
                         NVIC_EnableIRQ(HALL_EXTI_IRQn);
@@ -63,27 +63,27 @@ int main(void)
                     }          
                     break;
                 case 2:         // 加速
-                    hwSpeedDuty += 5;
-                    if (hwSpeedDuty > 100) {
-                        hwSpeedDuty=100;
+                    g_hwSpeedDuty += 5;
+                    if (g_hwSpeedDuty > 100) {
+                        g_hwSpeedDuty=100;
                     }
                     break;
                 case 3:         // 减速
-                    hwSpeedDuty -= 5;
-                    if (hwSpeedDuty < 7) {
-                        hwSpeedDuty = 7;
+                    g_hwSpeedDuty -= 5;
+                    if (g_hwSpeedDuty < 7) {
+                        g_hwSpeedDuty = 7;
                     }
                     break;
                 case 4:         // 方向反转
-                    if (CW == tMotorDirection) {
-                        tMotorDirection = CCW;
+                    if (CW == g_tMotorDirection) {
+                        g_tMotorDirection = CCW;
                     }
                     else {
-                        tMotorDirection=CW;
+                        g_tMotorDirection=CW;
                     }
                     break;
                 case 5:         // 停机
-                    tMotorState = STOP;
+                    g_tMotorState = STOP;
                     EXTI_ClearITPendingBit(HALL_U_EXITLINE|HALL_V_EXITLINE|HALL_W_EXITLINE);
                     NVIC_DisableIRQ(HALL_EXTI_IRQn);
                     TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_1,TIM_CCx_Disable);
@@ -115,7 +115,7 @@ void bldc_phase_chaneg(uint8_t step)
 
             /*  Channel1 configuration */
             /*  Channel2 configuration */    
-            TIM_SetCompare2(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare2(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_2,TIM_CCx_Enable);
             /*  Channel3 configuration */
             TIM_SetCompare3(BLDC_PWM_TIM,BLDC_TIM_PERIOD);
@@ -131,7 +131,7 @@ void bldc_phase_chaneg(uint8_t step)
             TIM_CCxNCmd(BLDC_PWM_TIM,TIM_Channel_1,TIM_CCxN_Enable);
 
             /*  Channel2 configuration */
-            TIM_SetCompare2(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare2(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_2,TIM_CCx_Enable);
             /*  Channel3 configuration */
             break;
@@ -146,7 +146,7 @@ void bldc_phase_chaneg(uint8_t step)
 
             /*  Channel2 configuration */ 
             /*  Channel3 configuration */
-            TIM_SetCompare3(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare3(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_3,TIM_CCx_Enable);
 
             break;
@@ -161,7 +161,7 @@ void bldc_phase_chaneg(uint8_t step)
             TIM_CCxNCmd(BLDC_PWM_TIM,TIM_Channel_2,TIM_CCxN_Enable);
 
             /*  Channel3 configuration */      
-            TIM_SetCompare3(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare3(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_3,TIM_CCx_Enable);
 
             break;
@@ -171,7 +171,7 @@ void bldc_phase_chaneg(uint8_t step)
             TIM_CCxNCmd(BLDC_PWM_TIM,TIM_Channel_3,TIM_CCxN_Disable);
 
             /*  Channel1 configuration */
-            TIM_SetCompare1(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare1(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_1,TIM_CCx_Enable);
             /*  Channel2 configuration */
             TIM_SetCompare2(BLDC_PWM_TIM,BLDC_TIM_PERIOD);
@@ -185,7 +185,7 @@ void bldc_phase_chaneg(uint8_t step)
             TIM_CCxNCmd(BLDC_PWM_TIM,TIM_Channel_2,TIM_CCxN_Disable);
 
             /*  Channel1 configuration */
-            TIM_SetCompare1(BLDC_PWM_TIM,BLDC_TIM_PERIOD * hwSpeedDuty/100);
+            TIM_SetCompare1(BLDC_PWM_TIM,BLDC_TIM_PERIOD * g_hwSpeedDuty/100);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_1,TIM_CCx_Enable);
             /*  Channel2 configuration */      
             /*  Channel3 configuration */
@@ -206,10 +206,10 @@ void bldc_phase_chaneg(uint8_t step)
 
 void systick_callback(void)
 {
-    if (RUN == tMotorState) {
-        hwTimeCount ++;
-        if(hwTimeCount>2000) {   // 2s超时，电机卡住不运转超过2s时间
-            tMotorState = STOP;
+    if (RUN == g_tMotorState) {
+        g_hwTimeCount ++;
+        if(g_hwTimeCount>2000) {   // 2s超时，电机卡住不运转超过2s时间
+            g_tMotorState = STOP;
             EXTI_ClearITPendingBit(HALL_U_EXITLINE | HALL_V_EXITLINE | HALL_W_EXITLINE);
             NVIC_DisableIRQ(HALL_EXTI_IRQn);
             TIM_CCxCmd(BLDC_PWM_TIM,TIM_Channel_1,TIM_CCx_Disable);
@@ -224,18 +224,17 @@ void systick_callback(void)
 uint8_t chMotorState;
 void hall_exti_callback(void)
 {
-  __IO uint8_t chStep = 0;
-  uint16_t hwHallState = (HALL_PORT ->IDR) & 0xe000; // 读取霍尔传感器信息
-  
-  if (tMotorState==STOP) {
-      return;
-  }
-  chStep = hwHallState >> 13;
-  if (tMotorDirection == CW) {  // 方向判断
-      chStep =  7 - chStep;
-  }
-  chMotorState = chStep;
-  bldc_phase_chaneg(chStep);    //驱动换相
-  hwTimeCount = 0;
+    __IO uint8_t chStep = 0;
+    uint16_t hwHallState = (HALL_PORT ->IDR) & 0xe000; // 读取霍尔传感器信息
+
+    if (g_tMotorState==STOP) {
+        return;
+    }
+    chStep = hwHallState >> 13;
+    if (g_tMotorDirection == CW) {  // 方向判断
+        chStep =  7 - chStep;
+    }
+    chMotorState = chStep;
+    bldc_phase_chaneg(chStep);    //驱动换相
+    g_hwTimeCount = 0;
 }
-/******************* (C) COPYRIGHT 2015-2020 硬石嵌入式开发团队 *****END OF FILE****/
